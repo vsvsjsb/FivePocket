@@ -738,7 +738,7 @@ final class TouchPad {
         return new int[]{(int)Math.round(32767*out*vx/len),(int)Math.round(-32767*out*vy/len*(invert?-1:1))};
     }
     /** Whether the right stick's ring is drawn: the 360 pad, or Camera = Stick with rswipe=0 (a swipe camera draws no ring). */
-    boolean rightRingDrawn(){return mode==Mode.PAD || (!rightSwipe && !cameraSwipe && !velocityCamera());}
+    boolean rightRingDrawn(){return editMode || mode==Mode.PAD || (!rightSwipe && !cameraSwipe && !velocityCamera());}
     // 2026-11-09 (the owner: "hold to ADS ... and auto fire when highlighted on an enemy"; "aim turns red when aimed at an enemy, maybe
     // that can be the trigger"): Aim Mode Hold (default) = AIM aims while held; Tap = the old 1-tap latch. autoFire (default off): while
     // aiming, RT is held as long as the library reports the game's reticle red (reticle(), fed by QolTouch; a reading older than
@@ -758,7 +758,7 @@ final class TouchPad {
     boolean usesPadZones(){return (mode==Mode.CONTEXT || mode==Mode.PAD) && !hidden();}
     float stickAlpha(int side,long t){
         final Stick s=sticks[side];
-        final float rest=(mode==Mode.PAD || (mode==Mode.CONTEXT && side==0))?PAD_REST_ALPHA:0f;
+        final float rest=(editMode || mode==Mode.PAD || (mode==Mode.CONTEXT && side==0))?PAD_REST_ALPHA:0f;
         if(s.held)return 1f;
         if(s.releasedAt<0)return rest;
         return Math.max(rest,1f-(t-s.releasedAt)/(float)STICK_FADE_MS);
