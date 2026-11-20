@@ -948,7 +948,7 @@ final class TouchPad {
             if(a.length!=3)continue;
             try{final float x=Float.parseFloat(a[1]),y=Float.parseFloat(a[2]);
                 if(!Float.isFinite(x)||!Float.isFinite(y)||x<0||x>1||y<0||y>1)continue;
-                if(a[0].equals("@left")||a[0].equals("@right")||a[0].matches("[a-zA-Z0-9_]+"))layoutPositions.put(a[0],new float[]{x,y});
+                if(a[0].equals("@left")||a[0].equals("@right")||a[0].matches("[a-zA-Z0-9_-]+"))layoutPositions.put(a[0],new float[]{x,y});
             }catch(NumberFormatException ignored){}
         }
         relayout();
