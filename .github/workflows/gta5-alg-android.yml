@@ -31,13 +31,13 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null
           "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
       - name: Build standalone GTA5 ALG APK
-        working-directory: android
+        working-directory: editions/single-screen/android
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon :app:assembleDebug
       - name: Verify APK package and upload
         run: |
-          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="editions/single-screen/android/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.vsvsjsb.gta5alg'"
           mkdir -p artifacts
