@@ -492,6 +492,7 @@ final class TouchPad {
     /** Whether the sticks are off at time t: a screen from the library's word, a wheel outside the pad, or a wheel button of the pad held
      *  past its tap (the wheel is open). */
     boolean sticksBlocked(long t){
+        if(editMode)return false;
         if(screens!=0 || wheelOutside || (mode!=Mode.PAD && overlay!=Overlay.PLAY))return true; // (the 360 pad ignores the overlays, as its layout does)
         for(Finger f:fingers)if(f.control!=null && wheelKind(f.control.kind) && (t-f.downAt>TAP_MS || f.moved))return true;
         return false;
@@ -587,7 +588,7 @@ final class TouchPad {
         return n;
     }
     /** What a pad finger is, for the log: left-stick / right-stick / the control's id / null (not the pad's). */
-    String fingerName(int id){final Finger f=finger(id);return f==null?null:f.stick==1?"left-stick":f.stick==2?"right-stick":f.control.id;}
+    String fingerName(int id){final Finger f=finger(id);return f==null?null:f.editing?(f.control!=null?f.control.id:f.editStick==0?"edit-left-stick":f.editStick==1?"edit-right-stick":"edit"):f.stick==1?"left-stick":f.stick==2?"right-stick":f.control.id;}
     /** The wheel a lifted wheel button hands over to QolGesture.latch() (once), or null. */
     QolGesture.Zone takeLatch(){final QolGesture.Zone z=latchRequest;latchRequest=null;return z;}
     /** ACTION_DOWN (no other finger can be down) and ACTION_UP (the last one lifted): any finger still held is stale - released, so no
@@ -773,6 +774,7 @@ final class TouchPad {
         final boolean blocked=sticksBlocked(t); // (SPEC 3.8: the sticks give nothing; a wheel button's own steering below still does)
         int b=0,lt=0,rt=0,rx=blocked?0:sticks[1].outX,ry=blocked?0:sticks[1].outY,steer=0;
         for(Finger f:fingers){
+            if(f.editing)continue;
             if(f.stick>0){if(f.stick==2 && !blocked && velocityCamera()){final int[] v=swipeValue(f,t);rx=v[0];ry=v[1];} // (2026-11-09: the swipe camera without the export)
                 else if(f.stick==2 && !blocked && pitchStick())ry=swipeValue(f,t)[1]; // (2026-11-10: the direct turn's vertical part, DIRECT_PITCH off)
                 continue;}
@@ -898,6 +900,7 @@ final class TouchPad {
         long h=(sticksBlocked(t)?1:0)|(aimLatched?2:0);
         for(Finger f:fingers){
             h=h*31+f.id;
+            if(f.editing){h=h*31+(f.control==null?f.editStick:System.identityHashCode(f.control));continue;}
             if(f.stick>0){final Stick s=sticks[f.stick-1];
                 if(f.stick==1 || rightRingDrawn())h=((h*31+Math.round(s.cx))*31+Math.round(s.cy))*31+(Math.round(s.kx)*4099L+Math.round(s.ky));
                 continue;}
