@@ -112,7 +112,7 @@ final class TouchPad {
         for(Control c:controls){final float[] p=layoutPositions.get(c.id);if(p!=null){c.cx=Math.max(c.r,Math.min(vw-c.r,p[0]*vw));c.cy=Math.max(c.r,Math.min(vh-c.r,p[1]*vh));}}
         for(int i=0;i<2;++i){final Stick st=sticks[i];final float[] p=layoutPositions.get(i==0?"@left":"@right");
             if(p!=null){st.hx=Math.max(st.R,Math.min(vw-st.R,p[0]*vw));st.hy=Math.max(st.R,Math.min(vh-st.R,p[1]*vh));
-                if(!st.held && st.releasedAt<0){st.cx=st.hx;st.cy=st.hy;}}}
+                if(!st.held){st.cx=st.hx;st.cy=st.hy;st.releasedAt=-1;st.kx=st.ky=0;st.outX=st.outY=0;}}}
     }
     private void homeSticks(){
         final float[][] home=layoutB && mode==Mode.CONTEXT?new float[][]{{B_LS_X,B_LS_Y,B_LS_R},{B_RS_X,B_RS_Y,B_RS_R}}:new float[][]{{LS_HOME_X,LS_HOME_Y,LS_R},{RS_HOME_X,RS_HOME_Y,RS_R}};
@@ -552,7 +552,7 @@ final class TouchPad {
         if(f.editing){
             if(f.control!=null){f.control.cx=Math.max(f.control.r,Math.min(vw-f.control.r,x));f.control.cy=Math.max(f.control.r,Math.min(vh-f.control.r,y));}
             else if(f.editStick>=0){final Stick st=sticks[f.editStick];st.hx=Math.max(st.R,Math.min(vw-st.R,x));st.hy=Math.max(st.R,Math.min(vh-st.R,y));
-                if(!st.held && st.releasedAt<0){st.cx=st.hx;st.cy=st.hy;}}
+                if(!st.held){st.cx=st.hx;st.cy=st.hy;st.releasedAt=-1;st.kx=st.ky=0;st.outX=st.outY=0;}}
             f.moved=true;return;
         }
         if(cameraSwipe && (f.stick==2 || (f.control!=null && f.control.kind==Kind.AIM_LATCH && adsTurns))){ // (item 4: the camera itself)
