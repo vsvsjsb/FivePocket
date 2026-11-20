@@ -62,7 +62,7 @@ bool privateProcess(){
     const int fd=open("/proc/self/cmdline",O_RDONLY|O_CLOEXEC);
     if(fd<0)return false;
     const ssize_t bytes=read(fd,name,sizeof(name)-1);close(fd);
-    return bytes>0 && std::strcmp(name,"dev.recompbootstrap.smoke.qol:private_trace")==0; // (single-screen QoL edition: its own application id)
+    return bytes>0 && std::strcmp(name,"com.vsvsjsb.gta5alg:private_trace")==0; // (single-screen QoL edition: its own application id)
 }
 
 bool libraryFile(int fd){
