@@ -6,7 +6,7 @@ on:
     branches:
       - gta5-alg-dev
     paths:
-      - "android/**"
+      - "editions/single-screen/android/**"
       - ".github/workflows/gta5-alg-android.yml"
 
 permissions:
