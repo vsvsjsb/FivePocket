@@ -60,7 +60,7 @@ final class TouchPadView extends View {
     private void drawEditor(Canvas c){
         final float left=getWidth()-88*dp,top=10*dp,right=getWidth()-10*dp,bottom=42*dp;
         fill.setColor(0xAA101820);c.drawRoundRect(left,top,right,bottom,10*dp,10*dp,fill);
-        rim.setStrokeWidth(1.4f*dp);rim.setColor(0xDDEFFFFFF);c.drawRoundRect(left,top,right,bottom,10*dp,10*dp,rim);
+        rim.setStrokeWidth(1.4f*dp);rim.setColor(0xDDEFFFFF);c.drawRoundRect(left,top,right,bottom,10*dp,10*dp,rim);
         text.setTextSize(11*dp);text.setColor(0xFFFFFFFF);
         c.drawText(pad.editing()?"DONE":"MOVE", (left+right)*0.5f, top+21*dp,text);
     }
@@ -70,8 +70,8 @@ final class TouchPadView extends View {
         final float a=pad.alpha(t);
         if(pad.mode!=TouchPad.Mode.OFF)drawEditor(c);
         if(a>0.01f){
-            for(TouchPad.Control k:pad.controls())if(!pad.userHidden() || k.kind==TouchPad.Kind.HIDE)drawControl(c,k,pad.userHidden()?Math.max(a,0.5f):a,t);
-            if(!pad.mapShown() && !pad.userHidden() && !pad.sticksBlocked(t)){ // (SPEC 3.8: no sticks while a screen is open)
+            for(TouchPad.Control k:pad.controls())if(pad.editing() || !pad.userHidden() || k.kind==TouchPad.Kind.HIDE)drawControl(c,k,pad.userHidden()?Math.max(a,0.5f):a,t);
+            if(pad.editing() || (!pad.mapShown() && !pad.userHidden() && !pad.sticksBlocked(t))){ // (SPEC 3.8: no sticks while a screen is open)
                 drawStick(c,0,a,t);if(pad.rightRingDrawn())drawStick(c,1,a,t);} // (rswipe / a swipe camera: no ring)
         }
         if(pad.animating(t))postInvalidateOnAnimation();
