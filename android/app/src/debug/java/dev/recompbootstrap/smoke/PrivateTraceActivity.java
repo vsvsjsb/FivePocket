@@ -233,11 +233,6 @@ public final class PrivateTraceActivity extends Activity {
             content.addView(status,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,
                     plainWindow?Gravity.CENTER:Gravity.TOP|Gravity.LEFT));
             capture=CaptureController.attach(this,surface,content,e->gamepadInput!=null && gamepadInput.key(e));
-            if(gameRequested && liveRequested && gamepadInput!=null){
-                gamepadInput.enableTouch();
-                GameTouchOverlay touch=new GameTouchOverlay(this,(buttons,lx,ly,rx,ry)->gamepadInput.touch(buttons,lx,ly,rx,ry));
-                content.addView(touch,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
-            }
             setContentView(content);fullPanel();show(liveRequested?"WAITING_FOR_NATIVE_SWAP_SURFACE":"WAITING_FOR_STOPPED_PREVIEW_SURFACE");
         }else startRunner.run();
     }
