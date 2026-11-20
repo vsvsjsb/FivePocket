@@ -13,7 +13,7 @@ final class ShellPages {
     private ShellPages() { }
 
     /** The title at the top left: the name of the game this private build runs, as plain text. */
-    static final String TITLE = "FivePocket"; // owner 2026-10-25 (the project's name; was the game's title)
+    static final String TITLE = "GTA5 ALG";
     static final String TEXT_PRIVATE_BUILD = "Private build", TEXT_NO_CONTROLLER = "No controller";
     static final String[] ABOUT_SECTIONS = {"This App", "Game Build", "Licence Notices", "Graphics Self-Test", CaptureAbout.SECTION, "Diagnostics", "Unsupported GPU"};
     static final int ABOUT_APP = 0, ABOUT_BUILD = 1, ABOUT_NOTICES = 2, ABOUT_SELF_TEST = 3, ABOUT_CAPTURES = 4, ABOUT_DIAGNOSTICS = 5, ABOUT_GPU_TRY = 6;
