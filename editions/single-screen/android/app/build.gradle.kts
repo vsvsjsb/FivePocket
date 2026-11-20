@@ -18,7 +18,7 @@ android {
     defaultConfig {
         // Single-screen QoL edition (2026-10-24): its own application id, so it installs beside the normal app and never replaces it.
         // The Java package and namespace stay dev.recompbootstrap.smoke (the JNI names follow the package, not the id).
-        applicationId = "dev.recompbootstrap.smoke.qol"
+        applicationId = "com.vsvsjsb.gta5alg"
         minSdk = 26
         targetSdk = 35
         // Stays 1 on purpose: an app that is not debuggable cannot be downgraded without an uninstall, and an
