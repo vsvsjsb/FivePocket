@@ -26,6 +26,8 @@ final class QolTouch implements View.OnTouchListener {
     static final String MAP_TAP_MARKER="recomp-map-tap-v1"; // (map_tap.h Marker)
     private static QolTouch current;     // the game view's listener while the game screen is shown
     private static Runnable padChanged;  // PrivateGamepadInput.publish
+    private final File filesDir;
+    private QolTouch(File filesDir){this.filesDir=filesDir;}
     private final QolGesture g=new QolGesture();
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable tick=this::tick;
@@ -154,11 +156,11 @@ final class QolTouch implements View.OnTouchListener {
     /** The game view's touch listener; the library is scanned for the map-tap macro on a worker thread. */
     static View.OnTouchListener open(File filesDir){
         if(current!=null)current.release();
-        current=new QolTouch();
+        current=new QolTouch(filesDir);
         Log.i(TAG,"QOL_TOUCH on long_ms="+QolGesture.LONG_MS+" slop="+QolGesture.LONG_SLOP+" open_ms="+QolGesture.OPEN_MS+" min_stick_ms="+
                 QolGesture.MIN_STICK_MS+" close_gap_ms="+QolGesture.CLOSE_GAP_MS+" dead="+QolGesture.DEAD);
         current.scanMapTap(filesDir);
-        current.pad.settings(readSettings(filesDir));current.applyStored();
+        current.pad.settings(readSettings(filesDir));current.applyStored();current.pad.loadLayout(readLayout(filesDir));
         Log.i(TAG,"TOUCH_PAD mode="+current.pad.mode+" hide="+current.pad.hideWithController+" size="+current.pad.sizeScale+" opacity="+current.pad.opacity);
         current.zones();
         current.handler.postDelayed(current.poll,100);
@@ -179,6 +181,12 @@ final class QolTouch implements View.OnTouchListener {
     }
     /** Whether the touch pad acts as a connected controller (Controls != Off). */
     static boolean padConnected(){final QolTouch w=current;return w!=null && w.pad.mode!=TouchPad.Mode.OFF;}
+    private static String readLayout(File filesDir){
+        final File f=new File(filesDir,"touch-layout-v1.txt");
+        if(!f.isFile() || f.length()>8192)return null;
+        try(FileInputStream in=new FileInputStream(f)){final byte[] b=new byte[8192];final int n=in.read(b);return n>0?new String(b,0,n,java.nio.charset.StandardCharsets.US_ASCII):null;}
+        catch(IOException error){return null;}
+    }
     static String readSettings(File filesDir){
         final File f=new File(filesDir,TOUCH_SETTINGS);
         if(!f.isFile())return null;
@@ -350,7 +358,7 @@ final class QolTouch implements View.OnTouchListener {
     }
     private char lastLatchLogged;
     private void tick(){scheduled=QolGesture.NONE;g.tick(SystemClock.uptimeMillis());block(SystemClock.uptimeMillis());after();if(view!=null)view.invalidate();}
-    private void after(){schedule();log("touch");logLatch();changed();redrawIfChanged();
+    private void after(){saveLayoutIfDirty();schedule();log("touch");logLatch();changed();redrawIfChanged();
         if(!reticleOn && reticleWanted()){reticleOn=true;handler.post(reticleTick);}} // (2026-11-09: auto-fire reads the reticle while aiming)
     // jank-1117 (owner on the Fold test app: "the left stick doesn't always disappear"): every path that lets the fingers go without a touch
     // event - the side menu opened by Back (menuEvents) or by its edge strip (routeMenu returns before onTouch's redraw), focus loss and a
@@ -378,7 +386,13 @@ final class QolTouch implements View.OnTouchListener {
         Log.i(TAG,"QOL_TOUCH state="+g.state()+" zone="+g.held()+" buttons="+Integer.toHexString(g.buttons())+" stick="+
                 (g.stickOn()?g.rightX()+","+g.rightY():"rest")+" map="+m+" by="+why+" (touch input)");
     }
-    private void release(){handler.removeCallbacks(tick);handler.removeCallbacks(poll);handler.removeCallbacks(reticleTick);reticleOn=false;scheduled=QolGesture.NONE;g.cancel();pad.cancel(SystemClock.uptimeMillis());pointer=second=-1;}
+    private void saveLayoutIfDirty(){
+        if(!pad.takeLayoutDirty())return;
+        try{AtomicFiles.write(new File(filesDir,"touch-layout-v1.txt"),pad.layoutText().getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            Log.i(TAG,"TOUCH_PAD custom layout saved");}
+        catch(IOException error){Log.w(TAG,"TOUCH_PAD custom layout save failed: "+error.getClass().getSimpleName());}
+    }
+    private void release(){handler.removeCallbacks(tick);handler.removeCallbacks(poll);handler.removeCallbacks(reticleTick);reticleOn=false;scheduled=QolGesture.NONE;g.cancel();pad.cancel(SystemClock.uptimeMillis());pointer=second=-1;saveLayoutIfDirty();}
     /** Whether the game library runs the map macro itself (its marker string), looked up once on a worker thread (the library is read
      *  to its end, ~1 s); until then, and when absent or unreadable, the app presses START and A and the map touch stays off. */
     private void scanMapTap(File filesDir){
