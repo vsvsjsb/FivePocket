@@ -3,6 +3,6 @@
     <!-- The name on the home screen (the lead's decision under the owner's "use your discretion", 2026-10-05).
          Owner 2026-10-25: the project is FivePocket (FivePocket, FivePocket iOS, FivePocket Duo, FivePocket Thor Edition); the menu header is "FivePocket" (ShellPages.TITLE). -->
     <!-- Single-screen QoL edition: its own name beside the normal app's. -->
-    <string name="app_name">FivePocket</string>
+    <string name="app_name">GTA5 ALG</string>
     <string name="smoke_heading">Graphics self-test</string>
 </resources>
