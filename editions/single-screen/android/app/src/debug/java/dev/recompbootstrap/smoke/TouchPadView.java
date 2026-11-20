@@ -57,10 +57,18 @@ final class TouchPadView extends View {
         try{paint(c,SystemClock.uptimeMillis());}
         finally{QolTouch.drawUs.add((System.nanoTime()-started)/1000);}
     }
+    private void drawEditor(Canvas c){
+        final float left=getWidth()-88*dp,top=10*dp,right=getWidth()-10*dp,bottom=42*dp;
+        fill.setColor(0xAA101820);c.drawRoundRect(left,top,right,bottom,10*dp,10*dp,fill);
+        rim.setStrokeWidth(1.4f*dp);rim.setColor(0xDDEFFFFFF);c.drawRoundRect(left,top,right,bottom,10*dp,10*dp,rim);
+        text.setTextSize(11*dp);text.setColor(0xFFFFFFFF);
+        c.drawText(pad.editing()?"DONE":"MOVE", (left+right)*0.5f, top+21*dp,text);
+    }
     private long idlePostedFor=Long.MIN_VALUE;
     private void paint(Canvas c,final long t){
         exclusion(); // (touch-120: a settings change can turn the controls on / off)
         final float a=pad.alpha(t);
+        if(pad.mode!=TouchPad.Mode.OFF)drawEditor(c);
         if(a>0.01f){
             for(TouchPad.Control k:pad.controls())if(!pad.userHidden() || k.kind==TouchPad.Kind.HIDE)drawControl(c,k,pad.userHidden()?Math.max(a,0.5f):a,t);
             if(!pad.mapShown() && !pad.userHidden() && !pad.sticksBlocked(t)){ // (SPEC 3.8: no sticks while a screen is open)
