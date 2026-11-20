@@ -21,7 +21,9 @@ final class PrivateGamepadInput implements InputManager.InputDeviceListener {
     private final Handler motionTimer=new Handler(Looper.getMainLooper());
     private final Runnable heldCheck=this::heldCheck;
     private long heldCheckAt=Long.MIN_VALUE;
-    private int deviceId=-1, rightAxisX=-1, rightAxisY=-1, leftAxis=-1, rightAxis=-1;\n    private boolean touchEnabled;\n    private int touchButtons,touchLX,touchLY,touchRX,touchRY;
+    private int deviceId=-1, rightAxisX=-1, rightAxisY=-1, leftAxis=-1, rightAxis=-1;
+    private boolean touchEnabled;
+    private int touchButtons,touchLX,touchLY,touchRX,touchRY;
     private Runnable observer;
     private String description="No controller", lastEvent="No input received";
     PrivateGamepadInput(Context context) {
@@ -107,14 +109,28 @@ final class PrivateGamepadInput implements InputManager.InputDeviceListener {
         } else description="No controller connected";
         mapper.configure(leftAxis>=0,rightAxis>=0);
         motionLog.released();scheduleHeldCheck(); // the game was just given a controller at rest
+        if(touchEnabled){buttons|=0xF7FF;axes|=15;triggers|=3;}
         PrivateTraceActivity.updateGamepadCapabilities(buttons,axes,triggers);
         Log.i(TAG,description.replace('\n',' ')+" capabilities="+Integer.toHexString(buttons)+" axes="+axes+" triggers="+triggers);
         publish();
     }
     void clear() {mapper.clear();motionLog.released();scheduleHeldCheck();lastEvent="Input released (focus/device change)";publish();}
+    void enableTouch() {
+        touchEnabled=true;
+        PrivateTraceActivity.updateGamepadCapabilities(0xF7FF,15,3);
+        publish();
+    }
+    void touch(int buttons,int lx,int ly,int rx,int ry) {
+        touchEnabled=true;touchButtons=buttons;touchLX=lx;touchLY=ly;touchRX=rx;touchRY=ry;
+        publish();
+    }
     private void publish() {
-        PrivateTraceActivity.updateGamepad(deviceId>=0,mapper.buttons(),mapper.leftTrigger(),mapper.rightTrigger(),
-                mapper.leftX,mapper.leftY,mapper.rightX,mapper.rightY);
+        int leftX=touchLX!=0?touchLX:mapper.leftX;
+        int leftY=touchLY!=0?touchLY:mapper.leftY;
+        int rightX=touchRX!=0?touchRX:mapper.rightX;
+        int rightY=touchRY!=0?touchRY:mapper.rightY;
+        PrivateTraceActivity.updateGamepad(deviceId>=0||touchEnabled,mapper.buttons()|touchButtons,
+                mapper.leftTrigger(),mapper.rightTrigger(),leftX,leftY,rightX,rightY);
         if(observer!=null)observer.run();
     }
     boolean key(KeyEvent event) {
