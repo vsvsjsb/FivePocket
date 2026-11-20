@@ -95,6 +95,8 @@ final class PublicSetupScreen implements Screen {
         else if (action == PublicSetupModel.FINISH) finishSetup();
         else if (action == PublicSetupModel.PICK) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+            // Ask Android for read access to the exact document the player selects; the importer copies it into app-private storage.
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
             try { host.startForResult(intent, PICK_CODE); }
             catch (ActivityNotFoundException e) { model.notice = PublicCodeWords.PICKER; }
