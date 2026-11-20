@@ -14,12 +14,14 @@ android {
     ndkVersion = "27.2.12479018"
 
     defaultConfig {
-        // A separate application ID keeps GTA5 ALG installed beside the original FivePocket app.
-        applicationId = "com.vsvsjsb.gta5alg"
+        applicationId = "dev.recompbootstrap.smoke"
         minSdk = 26
         targetSdk = 35
+        // Stays 1 on purpose: an app that is not debuggable cannot be downgraded without an uninstall, and an
+        // uninstall removes the game data and the saves. With the same version code the debug build can still be
+        // installed over the ship build (and the other way round) with "adb install -r", data kept.
         versionCode = 1
-        versionName = "1.0.0-alpha"
+        versionName = "1.0.2-alpha"
 
         ndk {
             abiFilters += "arm64-v8a"
@@ -43,10 +45,17 @@ android {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
+        // The build that is handed out: not debuggable, game code inside (see shipAssets above), and signed with the
+        // key the installed app carries today (the debug keystore, certificate SHA-256 f0ab38fa...37b0), so that it
+        // installs over that app without an uninstall. BUILD.md says what a release key would change.
+        // Public APK: only our loader/menu and text records. Never inherits the ship asset directory.
         create("public") {
             initWith(getByName("release"))
             isDebuggable = false
             isJniDebuggable = false
+            // Unsigned by default: what is published is signed with a key of the owner's choosing. For test installs
+            // -PpublicTestSigned makes Gradle sign it with the key the installed app carries today (the debug keystore,
+            // as the ship build), so it installs over that app; nobody types a key or a password for that.
             signingConfig = if (project.hasProperty("publicTestSigned")) signingConfigs.getByName("debug") else null
             matchingFallbacks += "release"
             externalNativeBuild { cmake { arguments += "-DCMAKE_BUILD_TYPE=Debug" } }
@@ -59,7 +68,12 @@ android {
             matchingFallbacks += "release"
             externalNativeBuild {
                 cmake {
+                    // The qualified loader is a Debug build (-O0). Shipping the same code generation keeps the
+                    // loader's machine code equal to the one every qualified session ran with; an optimised
+                    // loader is a separate, measured change.
                     arguments += "-DCMAKE_BUILD_TYPE=Debug"
+                    // The loader's three log lines about opening the game library (CMakeLists.txt). Remove this line to
+                    // ship the loader without them; ship_checks.sh apk then fails its line about them, on purpose.
                     arguments += "-DRECOMP_LOADER_OPEN_LOG=ON"
                 }
             }
@@ -68,6 +82,9 @@ android {
 
     sourceSets {
         getByName("public") { assets.srcDir("src/public/assets") }
+        // The game window, its launcher and its gamepad input live in src/debug/java for historical reasons (they
+        // were debug-only until ship week). They are compiled into every build type now; the folder keeps its name
+        // because test scripts and LauncherContractTest read it by path. The debug source set itself adds no Java.
         getByName("main") {
             java.srcDir("src/debug/java")
         }
@@ -98,6 +115,7 @@ android {
     }
 }
 
+// A ship APK without game code would install and then have nothing to start: refuse to build one.
 tasks.matching { it.name == "preShipBuild" }.configureEach {
     val staged = shipAssets
     doFirst {
@@ -108,7 +126,10 @@ tasks.matching { it.name == "preShipBuild" }.configureEach {
     }
 }
 
+// Source-set isolation is checked before packaging, including accidental additions to main/assets.
 tasks.matching { it.name == "prePublicBuild" }.configureEach {
+    // The folders are resolved here, not inside doFirst: a task action that calls the script's own file() cannot be
+    // kept by Gradle's configuration cache, and the build then ends as failed although every task ran (2026-10-08).
     val source = file("src/public/assets")
     val main = file("src/main/assets")
     val prebuilt = listOf(file("src/main/jniLibs"), file("src/public/jniLibs"))
@@ -117,6 +138,8 @@ tasks.matching { it.name == "prePublicBuild" }.configureEach {
         val found = source.walkTopDown().filter { it.isFile }.map { it.relativeTo(source).invariantSeparatorsPath }.toSet()
         if (found != expected) throw GradleException("The public app needs exactly its two metadata assets.")
         val shared = main.walkTopDown().filter { it.isFile }.map { it.relativeTo(main).invariantSeparatorsPath }.toSet()
+        // menu-redesign 2026-10-25 (the owner: "implement it with Nunito Sans"): the menus' typeface and its OFL licence, reviewed.
+        // 2026-11-05 (owner-approved): the GPLv3 text the app itself is under (the repository's COPYING, byte for byte).
         if (shared != setOf("licenses/AMD-FidelityFX-FSR1-MIT.txt", "fonts/NunitoSans-VF.ttf", "licenses/NunitoSans-OFL.txt",
                         "licenses/GPL-3.0.txt"))
             throw GradleException("An unreviewed shared asset would enter the public app.")
