@@ -10,11 +10,11 @@ import java.util.Locale;
 final class SetupDiscPage {
     private SetupDiscPage() {}
 
-    /** Touch on a row: a tap on a row that is not highlighted only moves the highlight there (false); on the highlighted one it is A. */
+    /** A touch is a direct selection: focus the row and activate it on the same tap. */
     static boolean tap(SetupDiscModel model, int row) {
-        if (model.focused() == row) return true;
+        if (row < 0 || row >= SetupDiscModel.ROWS) return false;
         model.focus(row);
-        return false;
+        return true;
     }
 
     /** Touch on an answer of the open question: the same rule. */
