@@ -21,7 +21,7 @@ final class PrivateGamepadInput implements InputManager.InputDeviceListener {
     private final Handler motionTimer=new Handler(Looper.getMainLooper());
     private final Runnable heldCheck=this::heldCheck;
     private long heldCheckAt=Long.MIN_VALUE;
-    private int deviceId=-1, rightAxisX=-1, rightAxisY=-1, leftAxis=-1, rightAxis=-1;
+    private int deviceId=-1, rightAxisX=-1, rightAxisY=-1, leftAxis=-1, rightAxis=-1;\n    private boolean touchEnabled;\n    private int touchButtons,touchLX,touchLY,touchRX,touchRY;
     private Runnable observer;
     private String description="No controller", lastEvent="No input received";
     PrivateGamepadInput(Context context) {
