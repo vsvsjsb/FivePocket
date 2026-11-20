@@ -2,7 +2,9 @@ package dev.recompbootstrap.smoke;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * qol-touch (2026-10-24; owner: "fold, work on touch controls, simulated x360 pad", "custom touch controls for each action like a normal
@@ -57,10 +59,12 @@ final class TouchPad {
     // ---- view
     private float vw,vh,mmPx=10f;private float[] frame={0,0,0,0};
     private final List<Control> controls=new ArrayList<>();
+    private final Map<String,float[]> layoutPositions=new LinkedHashMap<>();
+    private boolean editMode,layoutDirty;
     private int context=FOOT,shownContext=-1,pendingContext=-1,pendingCount=0;
     private boolean mapShown;
     // ---- fingers
-    static final class Finger {int id;Control control;int stick;float x0,y0,x,y;long downAt;boolean moved;float value;float vx,vy;long lastT;} // (vx, vy, lastT: the swipe camera's finger speed, px/s)
+    static final class Finger {int id;Control control;int stick;float x0,y0,x,y;long downAt;boolean moved,editing;int editStick=-1;float value;float vx,vy;long lastT;} // (vx, vy, lastT: the swipe camera's finger speed, px/s)
     private final List<Finger> fingers=new ArrayList<>();
     // ---- sticks: [0] left, [1] right
     static final class Stick {
@@ -105,6 +109,10 @@ final class TouchPad {
         for(Control c:controls){c.r=size(c.d,MIN_BUTTON_MM)*0.5f; // (kept inside the view: a physical floor can outgrow a frame-unit margin)
             c.cx=Math.max(c.r,Math.min(vw-c.r,px(c.fx)));c.cy=Math.max(c.r,Math.min(vh-c.r,c.id.startsWith("prompt_")?promptY(c.r):py(c.fy)));}
         homeSticks();
+        for(Control c:controls){final float[] p=layoutPositions.get(c.id);if(p!=null){c.cx=Math.max(c.r,Math.min(vw-c.r,p[0]*vw));c.cy=Math.max(c.r,Math.min(vh-c.r,p[1]*vh));}}
+        for(int i=0;i<2;++i){final Stick st=sticks[i];final float[] p=layoutPositions.get(i==0?"@left":"@right");
+            if(p!=null){st.hx=Math.max(st.R,Math.min(vw-st.R,p[0]*vw));st.hy=Math.max(st.R,Math.min(vh-st.R,p[1]*vh));
+                if(!st.held && st.releasedAt<0){st.cx=st.hx;st.cy=st.hy;}}}
     }
     private void homeSticks(){
         final float[][] home=layoutB && mode==Mode.CONTEXT?new float[][]{{B_LS_X,B_LS_Y,B_LS_R},{B_RS_X,B_RS_Y,B_RS_R}}:new float[][]{{LS_HOME_X,LS_HOME_Y,LS_R},{RS_HOME_X,RS_HOME_Y,RS_R}};
@@ -493,6 +501,14 @@ final class TouchPad {
     /** A finger down at (x, y): true when the pad takes it (a control or a stick), false when it belongs to QolGesture (a zone, the map). */
     boolean down(int id,long t,float x,float y){
         if(mode==Mode.OFF)return false;
+        if(editorHit(x,y)){editMode=!editMode;cancel(t);lastTouch=visibleSince=t;return true;}
+        if(editMode){
+            final Finger f=new Finger();f.id=id;f.x0=f.x=x;f.y0=f.y=y;f.downAt=t;f.editing=true;
+            final Control c=hitControl(x,y);
+            if(c!=null)f.control=c;
+            else f.editStick=stickAt(x,y);
+            fingers.add(f);lastTouch=t;return true;
+        }
         if(userHidden){final Control c=hitControl(x,y);if(c==null || c.kind!=Kind.HIDE)return false;
             userHidden=false;lastTouch=visibleSince=t;return true;} // (SHOW: the controls come back; this finger does nothing else)
         lastTouch=t;
@@ -532,6 +548,12 @@ final class TouchPad {
         final Finger f=finger(id);if(f==null)return;
         final float ox=f.x,oy=f.y;
         f.x=x;f.y=y;lastTouch=t;
+        if(f.editing){
+            if(f.control!=null){f.control.cx=Math.max(f.control.r,Math.min(vw-f.control.r,x));f.control.cy=Math.max(f.control.r,Math.min(vh-f.control.r,y));}
+            else if(f.editStick>=0){final Stick st=sticks[f.editStick];st.hx=Math.max(st.R,Math.min(vw-st.R,x));st.hy=Math.max(st.R,Math.min(vh-st.R,y));
+                if(!st.held && st.releasedAt<0){st.cx=st.hx;st.cy=st.hy;}}
+            f.moved=true;return;
+        }
         if(cameraSwipe && (f.stick==2 || (f.control!=null && f.control.kind==Kind.AIM_LATCH && adsTurns))){ // (item 4: the camera itself)
             if(f.stick==0 && Math.hypot(x-f.x0,y-f.y0)>QolGesture.LONG_SLOP*Math.min(frame[2],frame[3]))f.moved=true;
             if(pitchStick())swipeTrack(f,t,x-ox,y-oy); // (2026-11-10: the vertical part goes through the right stick, DIRECT_PITCH off)
@@ -548,7 +570,8 @@ final class TouchPad {
         else if(f.control.kind==Kind.TRIGGER_L || f.control.kind==Kind.TRIGGER_R)f.value=triggerValue(f);
         else if(f.control.kind==Kind.STEER){final Control h=hitControl(x,y);if(h!=null && h.kind==Kind.STEER)f.control=h;} // (3.16: a thumb slides from arrow to arrow)
     }
-    void up(int id,long t){final Finger f=finger(id);if(f==null)return;fingers.remove(f);lastTouch=t;release(f,t);}
+    void up(int id,long t){final Finger f=finger(id);if(f==null)return;fingers.remove(f);lastTouch=t;
+        if(f.editing){recordLayout(f);layoutDirty=true;return;}release(f,t);}
     /** ACTION_CANCEL, focus loss, a physical takeover: every touch input released at once. */
     void cancel(long t){for(Finger f:new ArrayList<>(fingers))release(f,t);fingers.clear();autotap=false;autotapFinger=null;releaseBits=0;pulseBits=0;latchRequest=null;}
     boolean owns(int id){return finger(id)!=null;}
@@ -586,6 +609,7 @@ final class TouchPad {
         if(c.kind==Kind.IMENU){pulseBits|=c.bits;pulseUntil=Math.max(t<pulseUntil?pulseUntil:t,t+IMENU_HOLD_MS);} // (3.17: held long enough even for a quick tap)
     }
     private void release(Finger f,long t){
+        if(f.editing){recordLayout(f);layoutDirty=true;return;}
         if(f.stick>0){final Stick s=sticks[f.stick-1];s.held=false;s.finger=-1;s.releasedAt=t;s.relKx=s.kx;s.relKy=s.ky;s.relCx=s.cx;s.relCy=s.cy;s.outX=s.outY=0;return;}
         final Control c=f.control;
         if(c.kind==Kind.AIM_LATCH && aimTap && t-f.downAt<=TAP_MS && !f.moved)aimLatched=!aimLatched; // (2026-11-09: only in Aim Mode Tap; Hold = aim while held)
@@ -734,7 +758,7 @@ final class TouchPad {
     boolean usesPadZones(){return (mode==Mode.CONTEXT || mode==Mode.PAD) && !hidden();}
     float stickAlpha(int side,long t){
         final Stick s=sticks[side];
-        final float rest=mode==Mode.PAD?PAD_REST_ALPHA:0f;
+        final float rest=(mode==Mode.PAD || (mode==Mode.CONTEXT && side==0))?PAD_REST_ALPHA:0f;
         if(s.held)return 1f;
         if(s.releasedAt<0)return rest;
         return Math.max(rest,1f-(t-s.releasedAt)/(float)STICK_FADE_MS);
@@ -857,6 +881,7 @@ final class TouchPad {
     // ======== drawing alpha (SPEC 5)
     float alpha(long t){
         if(mode==Mode.OFF)return 0f;
+        if(editMode)return Math.max(opacity,0.9f);
         final float since=Math.min(1f,(t-visibleSince)/(float)FADE_MS);
         if(hidden)return opacity*(1f-since)*idleFactor(t);
         final float idle=idleFactor(t);
@@ -906,6 +931,38 @@ final class TouchPad {
     boolean held(Control c){for(Finger f:fingers)if(f.control==c)return true;return c.kind==Kind.AIM_LATCH && aimLatched;}
     boolean driveByHeld(){for(Finger f:fingers)if(f.control!=null && f.control.id.equals("driveby"))return true;return false;}
 
+    // ======== touch layout editor (stored in files/touch-layout-v1.txt, separate from game saves/settings)
+    boolean editing(){return editMode;}
+    private boolean editorHit(float x,float y){return x>=vw-24f*mmPx && x<=vw-2f*mmPx && y<=12f*mmPx;}
+    private int stickAt(float x,float y){
+        for(int i=0;i<2;i++){final Stick st=sticks[i];if(Math.hypot(x-st.hx,y-st.hy)<=Math.max(st.R*1.5f,22f*mmPx))return i;}
+        return -1;
+    }
+    void loadLayout(String text){
+        layoutPositions.clear();
+        if(text!=null)for(String line:text.split("\n")){
+            final String[] a=line.trim().split(",");
+            if(a.length!=3)continue;
+            try{final float x=Float.parseFloat(a[1]),y=Float.parseFloat(a[2]);
+                if(!Float.isFinite(x)||!Float.isFinite(y)||x<0||x>1||y<0||y>1)continue;
+                if(a[0].equals("@left")||a[0].equals("@right")||a[0].matches("[a-zA-Z0-9_]+"))layoutPositions.put(a[0],new float[]{x,y});
+            }catch(NumberFormatException ignored){}
+        }
+        relayout();
+    }
+    boolean takeLayoutDirty(){if(!layoutDirty)return false;layoutDirty=false;return true;}
+    String layoutText(){
+        final StringBuilder out=new StringBuilder();
+        for(Map.Entry<String,float[]> e:layoutPositions.entrySet())out.append(e.getKey()).append(',')
+                .append(String.format(java.util.Locale.ROOT,"%.5f,%.5f\n",e.getValue()[0],e.getValue()[1]));
+        return out.toString();
+    }
+    private void recordLayout(Finger f){
+        if(f.control!=null)layoutPositions.put(f.control.id,new float[]{Math.max(0,Math.min(1,f.control.cx/Math.max(1,vw))),
+                Math.max(0,Math.min(1,f.control.cy/Math.max(1,vh)))});
+        else if(f.editStick>=0){final Stick st=sticks[f.editStick];layoutPositions.put(f.editStick==0?"@left":"@right",
+                new float[]{Math.max(0,Math.min(1,st.hx/Math.max(1,vw))),Math.max(0,Math.min(1,st.hy/Math.max(1,vh)))});}
+    }
     // ======== settings (files/settings/touch-controls.txt words; SPEC 5)
     void settings(String text){
         mode=Mode.CONTEXT;hideWithController=true;showOnTouch=true;sizeScale=1f;opacity=0.8f;layoutB=true;moreOpen=false;rightSwipe=true;
