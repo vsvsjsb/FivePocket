@@ -70,7 +70,7 @@
             android:excludeFromRecents="true"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:screenOrientation="sensorLandscape" />
-        <!-- Update 1 P6 My Music: copies the player's songs into the app's music folder (files/My Music in its external files
+        <activity\n            android:name=".GpuDriverImportActivity"\n            android:exported="false"\n            android:screenOrientation="sensorLandscape" />\n        <!-- Update 1 P6 My Music: copies the player's songs into the app's music folder (files/My Music in its external files
              directory). Exported only to receive songs shared from a file manager (audio/*); it reads content from local storage
              providers only and opens no network connection. Started without songs it only says how to add them.
              Update 1: disabled (not in the share sheet) until E-SR1 passes; see MyMusicSettings.SHOWN. -->
