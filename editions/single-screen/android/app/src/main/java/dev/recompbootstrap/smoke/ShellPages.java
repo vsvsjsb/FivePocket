@@ -217,6 +217,8 @@ final class ShellPages {
             page.prompts.add(select(PROMPT_DIAGNOSTICS));
         } else if (level == ShellNav.COLUMN && section == ABOUT_GPU_TRY) {
             page.prompts.add(select(gpuTryAnyway ? PROMPT_TURN_OFF : PROMPT_TURN_ON));
+        } else if (level == ShellNav.COLUMN && section == ABOUT_GPU_DRIVERS) {
+            page.prompts.add(select(PROMPT_ADD_DRIVER));
         } else if (level == ShellNav.STRIP || (level == ShellNav.COLUMN && (section == ABOUT_SELF_TEST || aboutScrollable(lines.size())))) {
             page.prompts.add(select(SettingsPages.PROMPT_SELECT));
         }
