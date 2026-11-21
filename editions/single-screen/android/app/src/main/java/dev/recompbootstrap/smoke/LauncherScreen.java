@@ -412,6 +412,8 @@ final class LauncherScreen implements Screen, UiKit.Listener {
             about.copyDiagnostics();   // Update 1: the report to the clipboard + the share sheet (Diagnostics)
         } else if (tab == ShellNav.ABOUT && nav.column(ShellNav.ABOUT) == ShellPages.ABOUT_GPU_TRY) {
             about.toggleGpuTryAnyway();   // v1302: the opt-in switch for a GPU below the game's minimum (GpuSupport)
+        } else if (tab == ShellNav.ABOUT && nav.column(ShellNav.ABOUT) == ShellPages.ABOUT_GPU_DRIVERS) {
+            about.openGpuDriverManager();
         }
     }
 
