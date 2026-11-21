@@ -412,6 +412,7 @@ final class AboutScreen {
             String text = section == ShellPages.ABOUT_DIAGNOSTICS
                     ? String.join("\n", Diagnostics.sectionLines(copyingDiagnostics ? "Copying\u2026" : diagnosticsResult))
                     : section == ShellPages.ABOUT_GPU_TRY ? GpuSupport.status(owner.gpu()) + "\n\n" + GpuSupport.tryAnywayText(gpuTryAnyway)
+                    : section == ShellPages.ABOUT_GPU_DRIVERS ? driverSummary()
                     : sectionText(section, versionLine, codeLine, namesBlock, ship, CaptureAbout.text(captures, copyingCaptures, captureResult));
             // Reworded before it is wrapped into lines: a phrase that ran over two lines could not be found afterwards.
             lines = MenuScenes.paneText(ship ? ShipWords.plain(text) : text, true, owner.measure());
