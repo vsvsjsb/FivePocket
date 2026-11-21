@@ -22,7 +22,9 @@ final class ShellPages {
     /** What A does on the Diagnostics section (Update 1: Diagnostics, the clipboard and the share sheet). */
     static final String PROMPT_DIAGNOSTICS = "Copy Diagnostics";
     /** What A does on the Unsupported GPU section (v1302: GpuSupport's try-anyway switch). */
-    static final String PROMPT_TURN_ON = "Turn On", PROMPT_TURN_OFF = "Turn Off";\n    /** Opens the app-private GPU driver package importer; Android still controls the active system driver. */\n    static final String PROMPT_ADD_DRIVER = "Add Driver";
+    static final String PROMPT_TURN_ON = "Turn On", PROMPT_TURN_OFF = "Turn Off";
+    /** Opens the app-private GPU driver package importer; Android still controls the active system driver. */
+    static final String PROMPT_ADD_DRIVER = "Add Driver";
     static final String TEXT_SELF_TEST = "Opens a graphics test screen. Android's Back returns from it.";
     static final String LABEL_CONTROLLER_CHECK = "Controller Check";
     /** What B does while Play's "start anyway?" question is open. */
