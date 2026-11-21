@@ -425,7 +425,7 @@ final class AboutScreen {
     boolean enterable() {
         int section = nav.column(ShellNav.ABOUT);
         return section != ShellPages.ABOUT_SELF_TEST && section != ShellPages.ABOUT_CAPTURES && section != ShellPages.ABOUT_DIAGNOSTICS
-                && section != ShellPages.ABOUT_GPU_TRY
+                && section != ShellPages.ABOUT_GPU_TRY && section != ShellPages.ABOUT_GPU_DRIVERS
                 && ShellPages.aboutScrollable(lines().size());
     }
 
@@ -444,6 +444,31 @@ final class AboutScreen {
     void fill(MenuScenes.Page page) {
         List<String> shown = lines();
         ShellPages.about(page, nav, shown, scroll, capturesToCopy(), gpuTryAnyway);
+    }
+
+    /** Current imported package list and the Android activation limitation, shown on the About tab. */
+    private String driverSummary() {
+        File folder = new File(host.filesDir(), "gpu-drivers");
+        File[] files = folder.listFiles();
+        StringBuilder text = new StringBuilder("Import .so driver libraries or .zip driver packages.\n\n");
+        text.append("Stored packages: ");
+        int count = 0;
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile() && !file.getName().endsWith(".part")) {
+                    if (count++ > 0) text.append(", ");
+                    text.append(file.getName());
+                }
+            }
+        }
+        if (count == 0) text.append("none");
+        text.append("\n\nAndroid does not let a normal app replace the system Vulkan driver. Imported files are stored privately; they are not activated. The game continues using the active system driver.");
+        return text.toString();
+    }
+
+    /** Opens the private GPU driver package importer. */
+    void openGpuDriverManager() {
+        host.activity().startActivity(new Intent(host.activity(), GpuDriverImportActivity.class));
     }
 
     /** Opens a second instance of the launcher activity in its old self-test mode; Back returns here. */
