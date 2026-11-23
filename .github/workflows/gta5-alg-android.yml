@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - gta5-alg-dev
+      - gta5-alg-driver-support
     paths:
       - "editions/single-screen/android/**"
       - ".github/workflows/gta5-alg-android.yml"
